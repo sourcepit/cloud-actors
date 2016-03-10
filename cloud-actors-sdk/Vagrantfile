@@ -1,0 +1,44 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'erb'
+require 'fileutils'
+
+$update_channel = "stable"
+$image_version = "current"
+
+$http_proxy="http://cache.innovations.de:3128"
+$no_proxy="localhost,127.0.0.1,*.bosch-si.com,.innovations.de,.bosch-si.com,*.innovations.de,*.innoimm.local,.innoimm.local,/var/run/docker.sock"
+
+Vagrant.configure(2) do |config|
+  config.ssh.insert_key = false
+
+  config.vm.hostname = "ca.innoimm.local"
+  config.vm.network "private_network", ip: "192.168.56.31"
+  
+  config.vm.box = "coreos-%s" % $update_channel
+  if $image_version != "current"
+      config.vm.box_version = $image_version
+  end
+  config.vm.box_url = "http://%s.release.core-os.net/amd64-usr/%s/coreos_production_vagrant.json" % [$update_channel, $image_version]
+
+  if Vagrant.has_plugin?("vagrant-vbguest") then
+    config.vbguest.auto_update = false
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.cpus = 2
+    vb.memory = 4096
+  end
+
+  FileUtils.rm_rf('.tmp')
+  FileUtils.mkdir_p('.tmp')
+
+  File.open(".tmp/user-data.yml", 'wb') do |f|
+    f.write(ERB.new(File.new('user-data.yml.erb').read()).result(binding))
+  end
+
+  config.vm.provision :file, :source => ".tmp/user-data.yml", :destination => "/tmp/vagrantfile-user-data"
+  config.vm.provision :shell, :inline => "mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/", :privileged => true
+
+end

@@ -12,6 +12,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>cloud-actors-core</module>
+		<module>cloud-actors-sdk</module>
 	</modules>
 	<dependencies>
 		<dependency>
